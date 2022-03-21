@@ -1,0 +1,35 @@
+@base_url=http://localhost:3000
+
+### Create user
+POST {{base_url}}/users/signup
+Content-Type: application/json
+
+{
+    "email":"vivekpandey2710@gmail.com",
+    "username":"vivek",
+    "password":"vivek@123"
+}
+
+### Login user
+Post {{base_url}}/users/signin
+Content-Type: application/json
+
+{
+    "email" : "vivekpandey2710@gmail.com",
+    "password": "vivek@123"
+}
+
+### Transfer amount
+POST {{base_url}}/users/transferAmount
+Content-Type: application/json
+
+{   "email":"vivekpandey2710@gmail.com",
+    "to":"0x391C924EC2dC3454CEc9C79d9f381ab43BF31aDc",
+    "amount":1000
+}
+
+### Get balance
+GET {{base_url}}/users/getBalance 
+
+### Get transaction details
+GET {{base_url}}/users/getTransactionDetailsEvent 
