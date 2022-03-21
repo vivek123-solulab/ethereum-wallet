@@ -14,8 +14,7 @@ export const createUser = async (req, res) => {
         const newUser = new User({
             email,
             username,
-            password,
-            balance
+            password
         })
         const existingUser = await User.findOne({email})
         if(existingUser){
@@ -29,11 +28,11 @@ export const createUser = async (req, res) => {
             console.log(user.email);
             if(user){
                 // amount = faker.finance.amount()
-                console.log('amount===>',balance);
+                // console.log('amount===>',balance);
                 sendEmail({
                     email: user.email,
                     subject:"Verification Link" ,
-                    message:"This is your verification link after signup'<a href='https://blog.logrocket.com/implementing-a-secure-password-reset-in-node-js/'>Please click to view your token.</a>" +"The amount credited to Your wallet is:-" + balance
+                    message:"This is your verification link after signup'<a href='https://blog.logrocket.com/implementing-a-secure-password-reset-in-node-js/'>Please click to view your token.</a>" +"The amount credited to Your wallet is:-"
                 })
             }
         })
@@ -63,6 +62,7 @@ export const createSignIn = async (req, res) => {
 }
 
 export const transfer = async (req, res) => {
+    var ERC2OTransferReceipt,ERC2OBalanceReceipt;
     try {
         const {email,amount,to} = req.body
         const user = await User.findOne({
@@ -73,7 +73,7 @@ export const transfer = async (req, res) => {
             const init = async() => {
                 const provider = new  HDWalletProvider(
                   process.env.ADMIN_PRIVATE_KEY,
-                  'https://ropsten.infura.io/v3/0161fdc5c1fc46299e58286ab509550e'
+                  process.env.INFURA_URL
                 );
                 const web3 = new Web3(provider);
                 const accounts= await web3.eth.getAccounts();
@@ -81,16 +81,31 @@ export const transfer = async (req, res) => {
                 const contract = new web3.eth.Contract(abi,process.env.CONTRACT_ADDRESS);
 			   	console.log('accounts===>', accounts)
 			   
-				var ERC2OTransferReceipt= await contract.methods.transfer(to,1000).send({from:process.env.ADMIN_PUBLIC_KEY});
+				ERC2OTransferReceipt= await contract.methods.transfer(to,1000).send({from:process.env.ADMIN_PUBLIC_KEY});
 				console.log('ERC2OTransferReceipt===>',ERC2OTransferReceipt)
+
+                ERC2OBalanceReceiptofuser= await contract.methods.balanceOf(process.env.USER_PUBLIC_KEY).call();
+		        console.log('ERC2OTransferReceipt===>',ERC2OBalanceReceiptpofuser.toString())	
 
 			   console.log('accounts===>', accounts)
             };
             await init();
-            res.json({
-                status:true,
-                message:"Transaction Successfull."
-            })
+            if(ERC2OTransferReceipt){
+                res.status(200).json({
+                    success:true,
+                    message:"Transaction Successfull."
+                })
+                sendEmail({
+                    email: user.email,
+                    subject:"Transaction Successfull !!!" ,
+                    message:"Your Transaction is been successfully sent to user:-" + user.email + "The amount is been credited to the user is:-" + ERC2OBalanceReceiptofuser
+                })
+            }else if(!ERC2OTransferReceipt){
+                res.status(404).json({
+                    success:false,
+                    message:"Insufficient Balance...Transaction Failed!!!"
+                }) 
+            }
         }else if(!user) return res.status(404).json({
             sucess:false,
             message:"User not found."
@@ -105,27 +120,27 @@ export const getBalance = async (req, res, next) => {
 	const init = async() => {
 	    const provider = new  HDWalletProvider(
 	 	process.env.ADMIN_PRIVATE_KEY,
-		'https://ropsten.infura.io/v3/0161fdc5c1fc46299e58286ab509550e'
+		process.env.INFURA_URL
 		);
 		const web3 = new Web3(provider);
 		const getAccounts= await web3.eth.getAccounts();
 		console.log('accounts===>', getAccounts)
 		const contract = new web3.eth.Contract(abi,process.env.CONTRACT_ADDRESS);
 					   
-		ERC2OTransferReceipt= await contract.methods.balanceOf(process.env.ADMIN_PUBLIC_KEY).call();
-		console.log('ERC2OTransferReceipt===>',ERC2OTransferReceipt.toString())	
+		ERC2OBalanceReceiptofadmin= await contract.methods.balanceOf(process.env.ADMIN_PUBLIC_KEY).call();
+		console.log('ERC2OTransferReceipt===>',ERC2OBalanceReceiptofadmin.toString())	
 	};
 	await init();
     res.status(200).json({
       success: true,
-      message: 'Balance of the user:-' + ERC2OTransferReceipt.toString(),
+      message: 'Balance of the user:-' + ERC2OBalanceReceiptofadmin.toString(),
     })
 }
 
 export const getTransactionDetailsEvent = async (req, res, next) => {
 	const provider = new  HDWalletProvider(
 		process.env.ADMIN_PRIVATE_KEY,
-	   'https://ropsten.infura.io/v3/0161fdc5c1fc46299e58286ab509550e'
+	   process.env.INFURA_URL
 	);
 	const web3 = new Web3(provider);
 	const getAccounts= await web3.eth.getAccounts();
